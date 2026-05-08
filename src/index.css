@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Theme: EXACT healthplans.ai palette captured from live DOM.
+   Confirmed via getComputedStyle() against www.healthplans.ai.
+   ============================================================ */
+
+@layer base {
+  :root {
+    /* HP brand tokens (confirmed live) */
+    --hp-bg:        90 25% 98.43%;   /* #FBFCFA  warm off-white body bg     */
+    --hp-text:      148 33% 8%;      /* #0D1A13  deep dark green-black text */
+    --hp-sky:       198 51% 76%;     /* #A2CFE1  hero / accent surface      */
+    --hp-light:     201 41% 93%;     /* #DEEDF3  pale-blue alt section      */
+    --hp-deep:      203 60% 28%;     /* #1C5577  deep teal-blue (rare use)  */
+    --hp-mint:      150 94% 49%;     /* #0AF084  mint accent for underlines */
+    --hp-black:     0 0% 0%;         /* #000000  pure black                 */
+
+    /* shadcn token mapping */
+    --background: var(--hp-bg);
+    --foreground: var(--hp-text);
+
+    --card: 0 0% 100%;
+    --card-foreground: var(--hp-text);
+
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--hp-text);
+
+    /* Primary = pure black with sky-blue text (matches HP "Start Now" button) */
+    --primary: var(--hp-black);
+    --primary-foreground: var(--hp-sky);
+
+    --secondary: var(--hp-light);
+    --secondary-foreground: var(--hp-text);
+
+    --muted: var(--hp-light);
+    --muted-foreground: 148 12% 28%;
+
+    --accent: var(--hp-sky);
+    --accent-foreground: var(--hp-text);
+
+    --destructive: 7 78% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 18% 86%;
+    --input: 200 18% 86%;
+    --ring: var(--hp-deep);
+
+    --radius: 1.5rem;
+
+    --success: 152 56% 32%;
+    --warning: 35 88% 48%;
+    --danger: 7 78% 52%;
+    --schema: var(--hp-deep);
+
+    --shadow-soft: 0 1px 2px hsl(var(--hp-text) / 0.04), 0 8px 24px -12px hsl(var(--hp-text) / 0.10);
+    --shadow-card: 0 1px 2px hsl(var(--hp-text) / 0.04), 0 12px 32px -16px hsl(var(--hp-text) / 0.12);
+    --shadow-glow: 0 0 32px hsl(var(--hp-sky) / 0.4);
+    --shadow-agent: 0 0 16px hsl(var(--hp-deep) / 0.18);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: var(--hp-text);
+    --sidebar-primary: var(--hp-black);
+    --sidebar-primary-foreground: var(--hp-sky);
+    --sidebar-accent: var(--hp-light);
+    --sidebar-accent-foreground: var(--hp-text);
+    --sidebar-border: 200 18% 86%;
+    --sidebar-ring: var(--hp-deep);
+  }
+
+  .dark {
+    --background: var(--hp-black);
+    --foreground: var(--hp-bg);
+    --card: 148 33% 11%;
+    --card-foreground: var(--hp-bg);
+    --popover: 148 33% 11%;
+    --popover-foreground: var(--hp-bg);
+    --primary: var(--hp-sky);
+    --primary-foreground: var(--hp-black);
+    --secondary: 148 28% 14%;
+    --secondary-foreground: var(--hp-bg);
+    --muted: 148 28% 14%;
+    --muted-foreground: 200 15% 70%;
+    --accent: var(--hp-sky);
+    --accent-foreground: var(--hp-text);
+    --destructive: 7 78% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 148 20% 18%;
+    --input: 148 20% 18%;
+    --ring: var(--hp-sky);
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Arimo', 'Figtree', system-ui, -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: 'Figtree', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+    line-height: 1.08;
+    color: hsl(var(--hp-text));
+  }
+}
+
+@layer utilities {
+  /* HP-style "highlight" — the mint underline that emphasizes phrases */
+  .hp-underline {
+    background-image: linear-gradient(transparent 80%, hsl(var(--hp-mint)) 80%, hsl(var(--hp-mint)) 96%, transparent 96%);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+  .hp-link {
+    @apply text-hp-text font-medium hp-underline;
+  }
+
+  /* HP buttons — fully pill-shaped */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-hp-black px-9 py-3 text-base font-medium transition-colors hover:bg-hp-deep;
+    color: hsl(var(--hp-sky));
+    min-height: 47px;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-hp-text bg-transparent px-9 py-3 text-base font-medium text-hp-text transition-colors hover:bg-hp-text;
+    min-height: 47px;
+  }
+  .btn-secondary:hover { color: hsl(var(--hp-sky)); }
+
+  .btn-on-dark {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border bg-transparent px-9 py-3 text-base font-medium transition-colors;
+    color: hsl(var(--hp-sky));
+    border-color: hsl(var(--hp-sky));
+    min-height: 47px;
+  }
+  .btn-on-dark:hover { background-color: hsl(var(--hp-sky)); color: hsl(var(--hp-text)); }
+
+  /* The signature HP "rounded section" — large radius black/light card */
+  .hp-rounded-section {
+    border-radius: 64px;
+  }
+  @media (max-width: 768px) {
+    .hp-rounded-section { border-radius: 32px; }
+  }
+
+  /* small eyebrow label */
+  .hp-eyebrow {
+    @apply inline-block text-base font-bold tracking-tight text-hp-text;
+  }
+
+  .text-gradient {
+    background: linear-gradient(110deg, hsl(var(--hp-text)) 0%, hsl(var(--hp-deep)) 60%, hsl(var(--hp-sky)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .glow      { box-shadow: var(--shadow-glow); }
+  .agent-glow{ box-shadow: var(--shadow-agent); }
+  .card-shadow { box-shadow: var(--shadow-card); }
+  .soft-shadow { box-shadow: var(--shadow-soft); }
+
+  @keyframes pulse-ring {
+    0% { transform: scale(0.85); opacity: 0.55; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+  .pulse-ring { animation: pulse-ring 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+  @keyframes flow-dash { to { stroke-dashoffset: -200; } }
+  .flow-dash { stroke-dasharray: 8 6; animation: flow-dash 2s linear infinite; }
+
+  @keyframes float-up {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .float { animation: float-up 4s ease-in-out infinite; }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in { animation: fade-in 0.6s ease-out both; }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.97); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .animate-scale-in { animation: scale-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+}
