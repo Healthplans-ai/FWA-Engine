@@ -7,9 +7,34 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Test output
+coverage
+*.lcov
+
+# Dependency directories
 node_modules
+
+# Build output
 dist
 dist-ssr
+.cache
+.vite
+
+# Vercel
+.vercel
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local-only config
 *.local
 
 # Editor directories and files
