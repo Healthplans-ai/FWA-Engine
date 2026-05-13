@@ -21,6 +21,8 @@ import {
   Brain,
   Network,
   CheckCircle2,
+  ExternalLink,
+  Sparkles,
 } from "lucide-react";
 
 type LayerKey = "enrollment" | "provider" | "claims" | "payment";
@@ -125,6 +127,136 @@ const APPROACH = [
   { icon: Network, title: "Cross-Payer COB Reconciliation", body: "Match fingerprints against partner payer hashes — flag multi-payer billing" },
   { icon: CheckCircle2, title: "Decision + SHAP Explanation", body: "AUTO-BLOCK · PEND for SIU · APPROVE — every decision shipped with attribution" },
 ];
+
+type RuleSeverity = "CRITICAL" | "HIGH" | "MED";
+type RuleAction = "AUTO_BLOCK" | "PEND_SIU" | "MANUAL_REVIEW";
+
+const RULES: {
+  id: string;
+  name: string;
+  description: string;
+  severity: RuleSeverity;
+  reason: string;
+  action: RuleAction;
+}[] = [
+  {
+    id: "R1",
+    name: "Exact fingerprint match",
+    description:
+      "Identical claim already exists in the dedup store — same SHA-256 over NPI · Member · DOS · CPT · Modifier · Units · Charge.",
+    severity: "CRITICAL",
+    reason: "EXACT_DUP",
+    action: "AUTO_BLOCK",
+  },
+  {
+    id: "R2",
+    name: "Charge perturbation",
+    description:
+      "Same NPI + Member + DOS + CPT, but the charge amount has been nudged to evade exact-match deduplication.",
+    severity: "HIGH",
+    reason: "CHARGE_DELTA",
+    action: "PEND_SIU",
+  },
+  {
+    id: "R3",
+    name: "Date shift ±1 day",
+    description:
+      "Same NPI + Member + CPT submitted within a 24-hour window — service date moved by ±1 day to slip past dedup.",
+    severity: "HIGH",
+    reason: "DATE_SHIFT_DUP",
+    action: "PEND_SIU",
+  },
+  {
+    id: "R4",
+    name: "Modifier flip (-25 / -59)",
+    description:
+      "Same line resubmitted with a different modifier — often -25 or -59 added as an NCCI-bypass to unbundle services.",
+    severity: "HIGH",
+    reason: "MODIFIER_FLIP",
+    action: "PEND_SIU",
+  },
+  {
+    id: "R5",
+    name: "Cross-payer COB collision",
+    description:
+      "Same claim fingerprint billed to 2+ payers (Medicare + commercial + Medicaid) — coordination-of-benefits violation.",
+    severity: "CRITICAL",
+    reason: "CROSS_PAYER_COB",
+    action: "AUTO_BLOCK",
+  },
+  {
+    id: "R6",
+    name: "NCCI bundled-pair violation",
+    description:
+      "Two procedure codes billed separately that NCCI requires be reported as a single bundled code.",
+    severity: "MED",
+    reason: "NCCI_BUNDLED_PAIR",
+    action: "MANUAL_REVIEW",
+  },
+  {
+    id: "R7",
+    name: "Peer-NPI charge anomaly",
+    description:
+      "Charge amount lies more than 2σ above the peer-NPI distribution for the same CPT/HCPCS in the region.",
+    severity: "MED",
+    reason: "CHARGE_ANOMALY_Z",
+    action: "MANUAL_REVIEW",
+  },
+  {
+    id: "R8",
+    name: "Velocity ≥3 in 24h",
+    description:
+      "Same NPI + Member + CPT line submitted three or more times in a 24-hour window — high-frequency resubmission.",
+    severity: "HIGH",
+    reason: "VELOCITY_24H",
+    action: "PEND_SIU",
+  },
+  {
+    id: "R9",
+    name: "EOB before ERA",
+    description:
+      "Provider re-bills a claim before the prior submission's remittance advice has posted — race-condition exploit.",
+    severity: "MED",
+    reason: "EOB_BEFORE_ERA",
+    action: "MANUAL_REVIEW",
+  },
+  {
+    id: "R10",
+    name: "Service date > date-of-death",
+    description:
+      "Claim for a deceased beneficiary — service date is later than the member's recorded date of death.",
+    severity: "CRITICAL",
+    reason: "DOS_AFTER_DOD",
+    action: "AUTO_BLOCK",
+  },
+  {
+    id: "R11",
+    name: "Full-row duplicate",
+    description:
+      "Input row is byte-for-byte identical to another — every column matches, including Claim_ID and tracking IDs. Copy-paste or pipeline glitch.",
+    severity: "CRITICAL",
+    reason: "ROW_DUPLICATE",
+    action: "AUTO_BLOCK",
+  },
+];
+
+const SEVERITY_STYLES: Record<RuleSeverity, string> = {
+  CRITICAL: "bg-red-100 text-red-800",
+  HIGH:     "bg-orange-100 text-orange-800",
+  MED:      "bg-amber-100 text-amber-800",
+};
+
+const ACTION_STYLES: Record<RuleAction, string> = {
+  AUTO_BLOCK:    "bg-hp-text text-hp-sky",
+  PEND_SIU:      "bg-hp-deep text-hp-sky",
+  MANUAL_REVIEW: "bg-hp-light text-hp-text",
+};
+
+const ACTION_LABEL: Record<RuleAction, string> = {
+  AUTO_BLOCK:    "AUTO-BLOCK",
+  PEND_SIU:      "PEND · SIU",
+  MANUAL_REVIEW: "MANUAL REVIEW",
+};
 
 const Taxonomy = () => {
   const [activeLayer, setActiveLayer] = useState<LayerKey | null>("claims");
@@ -344,6 +476,36 @@ const Taxonomy = () => {
               <X className="h-5 w-5" />
             </button>
 
+            {/* ===== Try our agent · top banner CTA ===== */}
+            <a
+              href="https://fwa-dedup-front.vercel.app/"
+              target="_blank"
+              rel="noreferrer"
+              className="group relative block overflow-hidden bg-hp-text text-hp-sky px-8 md:px-14 py-5 md:py-6"
+            >
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                   style={{ background: "linear-gradient(90deg, hsl(var(--hp-deep)) 0%, hsl(var(--hp-text)) 100%)" }} />
+              <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-hp-sky/15 ring-1 ring-hp-sky/30">
+                    <Sparkles className="h-5 w-5 text-hp-sky" strokeWidth={1.8} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-[0.22em] text-hp-sky/70">
+                      Live demo
+                    </div>
+                    <div className="mt-0.5 text-lg md:text-xl font-extrabold text-hp-sky">
+                      Try our duplicate-detection agent
+                    </div>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-2 rounded-full bg-hp-sky px-6 py-2.5 text-sm font-bold text-hp-text transition-transform group-hover:translate-x-0.5">
+                  Try our agent
+                  <ExternalLink className="h-4 w-4" />
+                </span>
+              </div>
+            </a>
+
             <div className="p-8 md:p-14">
               <div className="hp-eyebrow">Approach · Duplicate Submission</div>
               <h2 className="mt-3 text-3xl md:text-5xl font-extrabold tracking-tight text-hp-text leading-[1.05]">
@@ -409,6 +571,73 @@ const Taxonomy = () => {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* RULES-BASED ENGINE — R1 … R11 */}
+              <div className="mt-12">
+                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+                  <div>
+                    <div className="hp-eyebrow text-sm">④ Rules-based engine · {RULES.length} deterministic checks</div>
+                    <p className="mt-3 max-w-3xl text-base text-hp-text/75 leading-relaxed">
+                      Every candidate claim is evaluated against the full rule library before
+                      it reaches the ML stage. Each rule is YAML-defined, SIU-editable, and
+                      ships its own severity + action — auditable end-to-end.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+                    <span className={`px-2.5 py-1 rounded-full ${SEVERITY_STYLES.CRITICAL}`}>CRITICAL</span>
+                    <span className={`px-2.5 py-1 rounded-full ${SEVERITY_STYLES.HIGH}`}>HIGH</span>
+                    <span className={`px-2.5 py-1 rounded-full ${SEVERITY_STYLES.MED}`}>MED</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {RULES.map((r, i) => (
+                    <div
+                      key={r.id}
+                      style={{ animationDelay: `${i * 60}ms` }}
+                      className="group relative rounded-2xl bg-hp-light p-6 hover:-translate-y-1 hover:shadow-md transition-all duration-300 animate-fade-in"
+                    >
+                      <div className="absolute top-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500"
+                           style={{ background: "hsl(var(--hp-mint))" }} />
+
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 min-w-[2.5rem] items-center justify-center rounded-xl bg-hp-bg px-2 text-sm font-extrabold text-hp-text">
+                            {r.id}
+                          </div>
+                          <span className={`text-[10px] font-bold uppercase tracking-[0.18em] px-2.5 py-1 rounded-full ${SEVERITY_STYLES[r.severity]}`}>
+                            {r.severity}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 text-base font-extrabold text-hp-text leading-snug">
+                        {r.name}
+                      </div>
+                      <p className="mt-2 text-sm text-hp-text/75 leading-relaxed">
+                        {r.description}
+                      </p>
+
+                      <div className="mt-5 flex items-center justify-between gap-2">
+                        <code className="text-[11px] font-mono text-hp-text/55">
+                          {r.reason}
+                        </code>
+                        <span className={`text-[10px] font-bold uppercase tracking-[0.18em] px-2.5 py-1 rounded-full ${ACTION_STYLES[r.action]}`}>
+                          {ACTION_LABEL[r.action]}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 rounded-2xl bg-hp-sky/40 px-6 py-5 text-sm text-hp-text/85 leading-relaxed">
+                  <span className="font-bold">Verdict aggregation:</span> a claim inherits the
+                  highest-severity rule that fires. CRITICAL → <code className="font-mono">AUTO-BLOCK</code>,
+                  HIGH → <code className="font-mono">PEND for SIU</code>, MED →
+                  <code className="font-mono"> MANUAL REVIEW</code>. Every verdict ships with the full list of
+                  triggered rules and the evidence each one used — nothing is a black box.
                 </div>
               </div>
 
